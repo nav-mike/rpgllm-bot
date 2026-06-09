@@ -17,6 +17,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 if __name__ == "__main__":
     application = ApplicationBuilder().token(os.environ["TELEGRAM_BOT_TOKEN"]).build()
 
+    print(
+        "supabase keys",
+        os.environ["RPG_LLM_SUPABASE_URL"],
+        os.environ["RPG_LLM_SUPABASE_PUBLISHABLE_KEY"],
+    )
+
     start_handler = CommandHandler("start", start)
     application.add_handler(start_handler)
 
