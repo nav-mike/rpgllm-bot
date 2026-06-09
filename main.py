@@ -49,6 +49,25 @@ def error_message(e: Exception) -> str:
     return error_msg
 
 
+def current_user(update: Update) -> dict[str, Any]:
+    """
+    Get the current user from supabase.
+    """
+    user_id = get_user_id(update)
+
+    response = (
+        supabase_client.table("users")
+        .select("*")
+        .eq("telegram_id", str(user_id))
+        .limit(1)
+        .execute()
+    )
+
+    result: dict[str, Any] = cast(dict[str, Any], response.data[0])
+
+    return result
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Start command
