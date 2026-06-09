@@ -1,6 +1,6 @@
 import os
 import logging
-from uuid import uuid4
+from typing import Any, List, cast
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from supabase import create_client, Client
@@ -41,6 +41,14 @@ def get_user_id(update: Update) -> int:
     return user_id
 
 
+def error_message(e: Exception) -> str:
+    """
+    Extract an error message from the exception.
+    """
+    error_msg = str(e) or type(e).__name__
+    return error_msg
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Start command
@@ -61,9 +69,6 @@ async def create_character(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = get_user_id(update)
     value = getattr(update.message, "text", "").partition(" ")[2]
 
-    if not user_id:
-        raise RuntimeError("user_id cannot be None")
-
     message = f"Character {value} has been saved."
     try:
         if not value:
@@ -75,7 +80,35 @@ async def create_character(update: Update, context: ContextTypes.DEFAULT_TYPE):
             {"user_id": str(user_id), "name": value.strip()}
         ).execute()
     except Exception as e:
-        message = f"{e}"
+        message = error_message(e)
+    finally:
+        await context.bot.send_message(chat_id=chat_id, text=message)
+
+
+async def list_characters(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Retrieve the list of user's characters
+    UsageL /list_characters
+    """
+
+    chat_id = get_chat_id(update)
+    user_id = get_user_id(update)
+
+    message = ""
+    try:
+        response = (
+            supabase_client.table("characters")
+            .select("*")
+            .eq("user_id", str(user_id))
+            .execute()
+        )
+        items: List[str] = [
+            f"{idx + 1}) {cast(dict[str, Any], item)['name']}"
+            for idx, item in enumerate(response.data)
+        ]
+        message = "\n".join(items)
+    except Exception as e:
+        message = error_message(e)
     finally:
         await context.bot.send_message(chat_id=chat_id, text=message)
 
@@ -85,8 +118,10 @@ if __name__ == "__main__":
 
     start_handler = CommandHandler("start", start)
     create_character_handler = CommandHandler("create_character", create_character)
+    list_characters_handler = CommandHandler("list_characters", list_characters)
 
     application.add_handler(start_handler)
     application.add_handler(create_character_handler)
+    application.add_handler(list_characters_handler)
 
     application.run_polling()
