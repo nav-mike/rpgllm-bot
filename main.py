@@ -60,7 +60,7 @@ async def create_character(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         supabase_client.table("characters").insert(
             {"user_id": str(user_id), "name": value}
-        )
+        ).execute()
     except Exception as e:
         message = f"{e}"
     finally:
@@ -70,11 +70,10 @@ async def create_character(update: Update, context: ContextTypes.DEFAULT_TYPE):
 if __name__ == "__main__":
     application = ApplicationBuilder().token(os.environ["TELEGRAM_BOT_TOKEN"]).build()
 
-    response = supabase_client.table("characters").select("*").execute()
-
-    print("response: ", response.data)
-
     start_handler = CommandHandler("start", start)
+    create_character_handler = CommandHandler("create_character", create_character)
+
     application.add_handler(start_handler)
+    application.add_handler(create_character_handler)
 
     application.run_polling()
