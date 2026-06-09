@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "pydantic-ai>=1.106.0",
     "python-telegram-bot>=22.7",
     "supabase>=2.31.0",
 ]
