@@ -171,6 +171,35 @@ async def use_character(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=chat_id, text=message)
 
 
+async def current_character(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Show the current character.
+    Usage: /current
+    """
+
+    chat_id = get_chat_id(update)
+    user = current_user(update)
+
+    message = "Character is not selected"
+    try:
+        response = (
+            supabase_client.table("characters")
+            .select("*")
+            .eq("id", user["current_character"])
+            .execute()
+        )
+
+        character = cast(dict[str, Any], response.data[0])
+        if not character:
+            raise RuntimeError("Character is not selected")
+
+        message = f"Currrent character is {character['name']}"
+    except Exception as e:
+        message = error_message(e)
+    finally:
+        await context.bot.send_message(chat_id=chat_id, text=message)
+
+
 if __name__ == "__main__":
     application = ApplicationBuilder().token(os.environ["TELEGRAM_BOT_TOKEN"]).build()
 
@@ -178,10 +207,12 @@ if __name__ == "__main__":
     create_character_handler = CommandHandler("create_character", create_character)
     list_characters_handler = CommandHandler("list_characters", list_characters)
     use_character_hanlder = CommandHandler("use", use_character)
+    current_character_handler = CommandHandler("current", current_character)
 
     application.add_handler(start_handler)
     application.add_handler(create_character_handler)
     application.add_handler(list_characters_handler)
     application.add_handler(use_character_hanlder)
+    application.add_handler(current_character_handler)
 
     application.run_polling()
