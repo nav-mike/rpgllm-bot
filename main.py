@@ -118,14 +118,38 @@ async def list_characters(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=chat_id, text=message)
 
 
-# async def use_character(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     """
-#         Select one of the characters for active usage.
-#         Usage: /use Name
-#         """
-#
-#     chat_id = get_chat_id(update)
-#     user_id = get_user_id(update)
+async def use_character(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Select one of the characters for active usage.
+    Usage: /use Name
+    """
+
+    chat_id = get_chat_id(update)
+    user_id = get_user_id(update)
+    value = getattr(update.message, "text", "").partition(" ")[2]
+
+    message = f"Character {value} has been selected."
+    try:
+        if not value:
+            raise ValueError("Character's name cannot be empty. Please use /use Name")
+
+        response = (
+            supabase_client.table("characters")
+            .select("*")
+            .eq("name", value.strip())
+            .eq("user_id", str(user_id))
+            .limit(1)
+            .execute()
+        )
+        character = cast(dict[str, Any], response.data[0])
+
+        supabase_client.table("users").update(
+            {"current_character": character["id"]}
+        ).eq("telegram_id", str(user_id)).execute()
+    except Exception as e:
+        message = error_message(e)
+    finally:
+        await context.bot.send_message(chat_id=chat_id, text=message)
 
 
 if __name__ == "__main__":
@@ -134,9 +158,11 @@ if __name__ == "__main__":
     start_handler = CommandHandler("start", start)
     create_character_handler = CommandHandler("create_character", create_character)
     list_characters_handler = CommandHandler("list_characters", list_characters)
+    use_character_hanlder = CommandHandler("use", use_character)
 
     application.add_handler(start_handler)
     application.add_handler(create_character_handler)
     application.add_handler(list_characters_handler)
+    application.add_handler(use_character_hanlder)
 
     application.run_polling()
