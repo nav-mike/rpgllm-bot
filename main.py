@@ -46,6 +46,7 @@ def error_message(e: Exception) -> str:
     Extract an error message from the exception.
     """
     error_msg = str(e) or type(e).__name__
+    print(error_msg)
     return error_msg
 
 
@@ -223,6 +224,27 @@ async def update_description(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await context.bot.send_message(chat_id=chat_id, text=error_message(e))
 
 
+async def add_diary(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Save a record to character's diary.
+    Usage: /add_diary Text
+    """
+
+    chat_id = get_chat_id(update)
+    user = current_user(update)
+    value = getattr(update.message, "text", "").partition(" ")[2].strip()
+
+    try:
+        if not value:
+            raise ValueError("Diary record cannot be empty. Please use /add_diary Text")
+
+        supabase_client.table("diary").insert(
+            {"character": user["current_character"], "message": value}
+        ).execute()
+    except Exception as e:
+        await context.bot.send_message(chat_id=chat_id, text=error_message(e))
+
+
 if __name__ == "__main__":
     application = ApplicationBuilder().token(os.environ["TELEGRAM_BOT_TOKEN"]).build()
 
@@ -234,6 +256,7 @@ if __name__ == "__main__":
     update_description_handler = CommandHandler(
         "update_description", update_description
     )
+    add_diary_handler = CommandHandler("add_diary", add_diary)
 
     application.add_handler(start_handler)
     application.add_handler(create_character_handler)
@@ -241,5 +264,6 @@ if __name__ == "__main__":
     application.add_handler(use_character_hanlder)
     application.add_handler(current_character_handler)
     application.add_handler(update_description_handler)
+    application.add_handler(add_diary_handler)
 
     application.run_polling()
