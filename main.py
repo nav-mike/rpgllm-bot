@@ -191,13 +191,36 @@ async def current_character(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         character = cast(dict[str, Any], response.data[0])
         if not character:
-            raise RuntimeError("Character is not selected")
+            raise ValueError("Character is not selected")
 
         message = f"Currrent character is {character['name']}"
     except Exception as e:
         message = error_message(e)
     finally:
         await context.bot.send_message(chat_id=chat_id, text=message)
+
+
+async def update_description(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Update the character description.
+    Usage: /update_description Text
+    """
+
+    chat_id = get_chat_id(update)
+    user = current_user(update)
+    value = getattr(update.message, "text", "").partition(" ")[2].strip()
+
+    try:
+        if not value:
+            raise ValueError(
+                "Description cannot be empty. Please use /update_description Text"
+            )
+
+        supabase_client.table("characters").update({"background": value}).eq(
+            "id", user["current_character"]
+        ).execute()
+    except Exception as e:
+        await context.bot.send_message(chat_id=chat_id, text=error_message(e))
 
 
 if __name__ == "__main__":
@@ -208,11 +231,15 @@ if __name__ == "__main__":
     list_characters_handler = CommandHandler("list_characters", list_characters)
     use_character_hanlder = CommandHandler("use", use_character)
     current_character_handler = CommandHandler("current", current_character)
+    update_description_handler = CommandHandler(
+        "update_description", update_description
+    )
 
     application.add_handler(start_handler)
     application.add_handler(create_character_handler)
     application.add_handler(list_characters_handler)
     application.add_handler(use_character_hanlder)
     application.add_handler(current_character_handler)
+    application.add_handler(update_description_handler)
 
     application.run_polling()
