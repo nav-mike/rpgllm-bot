@@ -2,7 +2,13 @@ import os
 import logging
 from typing import Any, List, cast
 from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
+from telegram.ext import (
+    ApplicationBuilder,
+    ContextTypes,
+    CommandHandler,
+    MessageHandler,
+    filters,
+)
 from supabase import create_client, Client
 
 logging.basicConfig(
@@ -245,6 +251,27 @@ async def add_diary(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=chat_id, text=error_message(e))
 
 
+async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Simple chat interface.
+    """
+
+    chat_id = get_chat_id(update)
+    # user = current_user(update)
+    value = getattr(update.message, "text", "").strip()
+
+    message = "<empty>"
+    try:
+        if not value:
+            raise ValueError("A message cannot be empty.")
+
+        message = f"echo: {value}"
+    except Exception as e:
+        message = error_message(e)
+    finally:
+        await context.bot.send_message(chat_id=chat_id, text=message)
+
+
 if __name__ == "__main__":
     application = ApplicationBuilder().token(os.environ["TELEGRAM_BOT_TOKEN"]).build()
 
@@ -258,6 +285,8 @@ if __name__ == "__main__":
     )
     add_diary_handler = CommandHandler("add_diary", add_diary)
 
+    chat_hanlder = MessageHandler(filters.TEXT, chat)
+
     application.add_handler(start_handler)
     application.add_handler(create_character_handler)
     application.add_handler(list_characters_handler)
@@ -265,5 +294,6 @@ if __name__ == "__main__":
     application.add_handler(current_character_handler)
     application.add_handler(update_description_handler)
     application.add_handler(add_diary_handler)
+    application.add_handler(chat_hanlder)
 
     application.run_polling()
