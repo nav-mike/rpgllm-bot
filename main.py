@@ -28,6 +28,19 @@ def get_chat_id(update: Update) -> int:
     return chat_id
 
 
+def get_user_id(update: Update) -> int:
+    """
+    Extract the user id from update object.
+    Raises RuntimeError of the id is None.
+    """
+    user_id: int | None = getattr(update.effective_user, "id", None)
+
+    if not user_id:
+        raise RuntimeError("user_id cannot be None")
+
+    return user_id
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Start command
@@ -45,7 +58,7 @@ async def create_character(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
 
     chat_id = get_chat_id(update)
-    user_id: int | None = getattr(update.effective_user, "id", None)
+    user_id = get_user_id(update)
     value = getattr(update.message, "text", "").partition(" ")[2]
 
     if not user_id:
