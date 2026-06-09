@@ -59,7 +59,7 @@ async def create_character(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
         supabase_client.table("characters").insert(
-            {"user_id": str(user_id), "name": value}
+            {"user_id": str(user_id), "name": value.strip()}
         ).execute()
     except Exception as e:
         message = f"{e}"
