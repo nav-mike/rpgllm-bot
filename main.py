@@ -15,10 +15,27 @@ supabase_client: Client = create_client(
 )
 
 
+def get_chat_id(update: Update) -> int:
+    """
+    Extract the chat id from update object.
+    Raises RuntimeError if the id is None.
+    """
+    chat_id: int | None = getattr(update.effective_chat, "id", None)
+
+    if not chat_id:
+        raise RuntimeError("chat_id cannot be None")
+
+    return chat_id
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, text="I'm bot, please talk to me!"
-    )
+    """
+    Start command
+    Usage: /start
+    """
+    chat_id = get_chat_id(update)
+
+    await context.bot.send_message(chat_id=chat_id, text="I'm bot, please talk to me!")
 
 
 async def create_character(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -27,12 +44,9 @@ async def create_character(update: Update, context: ContextTypes.DEFAULT_TYPE):
     Usage: /create_character name
     """
 
-    chat_id: int | None = getattr(update.effective_chat, "id", None)
+    chat_id = get_chat_id(update)
     user_id: int | None = getattr(update.effective_user, "id", None)
     value = getattr(update.message, "text", "").partition(" ")[2]
-
-    if not chat_id:
-        raise RuntimeError("chat_id cannot be None")
 
     if not user_id:
         raise RuntimeError("user_id cannot be None")
@@ -44,7 +58,9 @@ async def create_character(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "Character's name cannot be empty. Please use /create_character Name"
             )
 
-        supabase_client.table("characters").insert({"user_id": user_id, "name": value})
+        supabase_client.table("characters").insert(
+            {"user_id": str(user_id), "name": value}
+        )
     except Exception as e:
         message = f"{e}"
     finally:
