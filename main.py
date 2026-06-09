@@ -55,6 +55,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     Usage: /start
     """
     chat_id = get_chat_id(update)
+    user_id = get_user_id(update)
+
+    supabase_client.table("users").upsert(
+        {"telegram_id": user_id}, on_conflict="telegram_id", ignore_duplicates=True
+    ).execute()
 
     await context.bot.send_message(chat_id=chat_id, text="I'm bot, please talk to me!")
 
@@ -88,7 +93,7 @@ async def create_character(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def list_characters(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Retrieve the list of user's characters
-    UsageL /list_characters
+    Usage: /list_characters
     """
 
     chat_id = get_chat_id(update)
@@ -111,6 +116,16 @@ async def list_characters(update: Update, context: ContextTypes.DEFAULT_TYPE):
         message = error_message(e)
     finally:
         await context.bot.send_message(chat_id=chat_id, text=message)
+
+
+# async def use_character(update: Update, context: ContextTypes.DEFAULT_TYPE):
+#     """
+#         Select one of the characters for active usage.
+#         Usage: /use Name
+#         """
+#
+#     chat_id = get_chat_id(update)
+#     user_id = get_user_id(update)
 
 
 if __name__ == "__main__":
