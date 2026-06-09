@@ -1,5 +1,6 @@
 import os
 import logging
+from uuid import uuid4
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from supabase import create_client, Client
@@ -8,7 +9,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
-supabaseClient: Client = create_client(
+supabase_client: Client = create_client(
     supabase_url=os.environ["RPG_LLM_SUPABASE_URL"],
     supabase_key=os.environ["RPG_LLM_SUPABASE_PUBLISHABLE_KEY"],
 )
@@ -20,10 +21,40 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+async def create_character(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Create a new character
+    Usage: /create_character name
+    """
+
+    chat_id: int | None = getattr(update.effective_chat, "id", None)
+    user_id: int | None = getattr(update.effective_user, "id", None)
+    value = getattr(update.message, "text", "").partition(" ")[2]
+
+    if not chat_id:
+        raise RuntimeError("chat_id cannot be None")
+
+    if not user_id:
+        raise RuntimeError("user_id cannot be None")
+
+    message = f"Character {value} has been saved."
+    try:
+        if not value:
+            raise ValueError(
+                "Character's name cannot be empty. Please use /create_character Name"
+            )
+
+        supabase_client.table("characters").insert({"user_id": user_id, "name": value})
+    except Exception as e:
+        message = f"{e}"
+    finally:
+        await context.bot.send_message(chat_id=chat_id, text=message)
+
+
 if __name__ == "__main__":
     application = ApplicationBuilder().token(os.environ["TELEGRAM_BOT_TOKEN"]).build()
 
-    response = supabaseClient.table("characters").select("*").execute()
+    response = supabase_client.table("characters").select("*").execute()
 
     print("response: ", response.data)
 
