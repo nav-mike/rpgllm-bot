@@ -10,6 +10,9 @@ from telegram.ext import (
     filters,
 )
 from supabase import create_client, Client
+from pydantic_ai import Agent
+from pydantic_ai.models.openrouter import OpenRouterModel
+from pydantic_ai.providers.openrouter import OpenRouterProvider
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -19,6 +22,13 @@ supabase_client: Client = create_client(
     supabase_url=os.environ["RPG_LLM_SUPABASE_URL"],
     supabase_key=os.environ["RPG_LLM_SUPABASE_PUBLISHABLE_KEY"],
 )
+
+model = OpenRouterModel(
+    "openrouter/owl-alpha",
+    provider=OpenRouterProvider(api_key=os.environ["RPG_LLM_OPENROUTER_API_KEY"]),
+)
+
+agent = Agent(model)
 
 
 def get_chat_id(update: Update) -> int:
@@ -265,7 +275,8 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not value:
             raise ValueError("A message cannot be empty.")
 
-        message = f"echo: {value}"
+        response = await agent.run(value)
+        message = f"agent: {response.output}"
     except Exception as e:
         message = error_message(e)
     finally:
