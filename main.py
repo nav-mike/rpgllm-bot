@@ -91,7 +91,11 @@ def chat_history(id: int) -> list[dict[str, Any]]:
     """
 
     response = (
-        supabase_client.table("chat").select("*").eq("character_id", id).execute()
+        supabase_client.table("chat")
+        .select("*")
+        .eq("character_id", id)
+        .order("created_at")
+        .execute()
     )
     messages = [cast(dict[str, Any], item) for item in response.data]
 
