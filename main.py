@@ -278,8 +278,12 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
 
     chat_id = get_chat_id(update)
-    # user = current_user(update)
+    user = current_user(update)
     value = getattr(update.message, "text", "").strip()
+
+    messages = chat_history(user["id"])
+
+    print("messages: ", messages)
 
     message = "<empty>"
     try:
