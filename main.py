@@ -85,6 +85,17 @@ def current_user(update: Update) -> dict[str, Any]:
     return result
 
 
+def chat_history(id: int) -> list[dict[str, Any]]:
+    """
+    Fetch the whole chat history.
+    """
+
+    response = supabase_client.table("chat").select("*").eq("user_id", id).execute()
+    messages = [cast(dict[str, Any], item) for item in response.data]
+
+    return messages
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Start command
