@@ -90,7 +90,9 @@ def chat_history(id: int) -> list[dict[str, Any]]:
     Fetch the whole chat history.
     """
 
-    response = supabase_client.table("chat").select("*").eq("user_id", id).execute()
+    response = (
+        supabase_client.table("chat").select("*").eq("character_id", id).execute()
+    )
     messages = [cast(dict[str, Any], item) for item in response.data]
 
     return messages
@@ -99,9 +101,22 @@ def chat_history(id: int) -> list[dict[str, Any]]:
 def add_message(
     messages: List[dict[str, Any]], message: dict[str, Any]
 ) -> List[dict[str, Any]]:
-    supabase_client.table("chat").insert(**message).execute()
+    response = (
+        supabase_client.table("chat")
+        .insert(
+            {
+                "character_id": message["character_id"],
+                "content": message["content"],
+                "role": message["role"],
+            }
+        )
+        .select("*")
+        .execute()
+    )
 
-    messages.append(message)
+    got: dict[str, Any] = cast(dict[str, Any], response.data[0])
+
+    messages.append(got)
 
     return messages
 
@@ -291,7 +306,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = current_user(update)
     value = getattr(update.message, "text", "").strip()
 
-    messages = chat_history(user["id"])
+    messages = chat_history(user["current_character"])
 
     print("messages: ", messages)
 
@@ -301,7 +316,12 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
             raise ValueError("A message cannot be empty.")
 
         response = await agent.run(value)
-        print(response)
+        agent_message: dict[str, Any] = {
+            "content": response.output,
+            "role": "model",
+            "character_id": user["current_character"],
+        }
+        messages = add_message(messages, agent_message)
         message = f"agent: {response.output}"
     except Exception as e:
         message = error_message(e)
