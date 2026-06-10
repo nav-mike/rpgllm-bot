@@ -1,6 +1,8 @@
 import os
+import json
 import logging
 from typing import Any, List, cast
+from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, UserPromptPart
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -10,7 +12,7 @@ from telegram.ext import (
     filters,
 )
 from supabase import create_client, Client
-from pydantic_ai import Agent
+from pydantic_ai import Agent, ModelMessage, ModelMessagesTypeAdapter
 from pydantic_ai.models.openrouter import OpenRouterModel
 from pydantic_ai.providers.openrouter import OpenRouterProvider
 
@@ -312,14 +314,25 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     messages = chat_history(user["current_character"])
 
-    print("messages: ", messages)
+    history: list[ModelMessage] = []
+
+    for item in messages:
+        if item["role"] == "user":
+            history.append(
+                ModelRequest(parts=[UserPromptPart(content=item["content"])])
+            )
+        elif item["role"] == "model":
+            history.append(ModelResponse(parts=[TextPart(content=item["content"])]))
+
+    print("messages: ", history)
 
     message = "<empty>"
     try:
         if not value:
             raise ValueError("A message cannot be empty.")
 
-        response = await agent.run(value)
+        response = await agent.run(value, message_history=history)
+
         agent_message: dict[str, Any] = {
             "content": response.output,
             "role": "model",
