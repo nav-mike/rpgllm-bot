@@ -321,6 +321,12 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "role": "model",
             "character_id": user["current_character"],
         }
+        user_message: dict[str, Any] = {
+            "content": value,
+            "role": "user",
+            "character_id": user["current_character"],
+        }
+        messages = add_message(messages, user_message)
         messages = add_message(messages, agent_message)
         message = f"agent: {response.output}"
     except Exception as e:
