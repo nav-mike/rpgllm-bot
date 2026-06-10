@@ -96,6 +96,16 @@ def chat_history(id: int) -> list[dict[str, Any]]:
     return messages
 
 
+def add_message(
+    messages: List[dict[str, Any]], message: dict[str, Any]
+) -> List[dict[str, Any]]:
+    supabase_client.table("chat").insert(**message).execute()
+
+    messages.append(message)
+
+    return messages
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Start command
@@ -291,6 +301,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
             raise ValueError("A message cannot be empty.")
 
         response = await agent.run(value)
+        print(response)
         message = f"agent: {response.output}"
     except Exception as e:
         message = error_message(e)
