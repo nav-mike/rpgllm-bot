@@ -87,7 +87,7 @@ def current_user(update: Update) -> dict[str, Any]:
     return result
 
 
-def chat_history(id: int) -> list[dict[str, Any]]:
+def fetch_messages(character_id: int) -> list[dict[str, Any]]:
     """
     Fetch the whole chat history.
     """
@@ -95,7 +95,7 @@ def chat_history(id: int) -> list[dict[str, Any]]:
     response = (
         supabase_client.table("chat")
         .select("*")
-        .eq("character_id", id)
+        .eq("character_id", character_id)
         .order("created_at")
         .execute()
     )
@@ -107,6 +107,9 @@ def chat_history(id: int) -> list[dict[str, Any]]:
 def add_message(
     messages: List[dict[str, Any]], message: dict[str, Any]
 ) -> List[dict[str, Any]]:
+    """
+    Insert a message to chat table.
+    """
     response = (
         supabase_client.table("chat")
         .insert(
@@ -125,6 +128,23 @@ def add_message(
     messages.append(got)
 
     return messages
+
+
+def to_history(messages: List[dict[str, Any]]) -> List[ModelMessage]:
+    """
+    Convert list of message to agent history.
+    """
+    history: List[ModelMessage] = []
+
+    for item in messages:
+        if item["role"] == "user":
+            history.append(
+                ModelRequest(parts=[UserPromptPart(content=item["content"])])
+            )
+        elif item["role"] == "model":
+            history.append(ModelResponse(parts=[TextPart(content=item["content"])]))
+
+    return history
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -312,19 +332,9 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = current_user(update)
     value = getattr(update.message, "text", "").strip()
 
-    messages = chat_history(user["current_character"])
+    messages = fetch_messages(user["current_character"])
 
-    history: list[ModelMessage] = []
-
-    for item in messages:
-        if item["role"] == "user":
-            history.append(
-                ModelRequest(parts=[UserPromptPart(content=item["content"])])
-            )
-        elif item["role"] == "model":
-            history.append(ModelResponse(parts=[TextPart(content=item["content"])]))
-
-    print("messages: ", history)
+    history: list[ModelMessage] = to_history(messages)
 
     message = "<empty>"
     try:
