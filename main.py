@@ -1,5 +1,4 @@
 import os
-import json
 import logging
 from typing import Any, List, cast
 from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, UserPromptPart
@@ -12,7 +11,7 @@ from telegram.ext import (
     filters,
 )
 from supabase import create_client, Client
-from pydantic_ai import Agent, ModelMessage, ModelMessagesTypeAdapter
+from pydantic_ai import Agent, ModelMessage
 from pydantic_ai.models.openrouter import OpenRouterModel
 from pydantic_ai.providers.openrouter import OpenRouterProvider
 
