@@ -11,7 +11,7 @@ from telegram.ext import (
     filters,
 )
 from supabase import create_client, Client
-from pydantic_ai import Agent, ModelMessage
+from pydantic_ai import Agent, ModelMessage, Tool
 from pydantic_ai.models.openrouter import OpenRouterModel
 from pydantic_ai.providers.openrouter import OpenRouterProvider
 
@@ -385,7 +385,39 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     chat_id = get_chat_id(update)
 
-    agent = Agent(model, deps_type=dict, system_prompt=SYSTEM_PROMPT)
+    def get_diary_records(**kwargs) -> List[dict[str, Any]]:
+        limit = kwargs["limit"]
+
+        response = (
+            supabase_client.table("diary")
+            .select("*")
+            .eq("character", character["id"])
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+
+        return [cast(dict[str, Any], item) for item in response.data]
+
+    tool = Tool.from_schema(
+        function=get_diary_records,
+        name="get_diary_records",
+        description="Get last limit records from character's diary.",
+        json_schema={
+            "additionalProperties": False,
+            "properties": {
+                "limit": {
+                    "description": "amout of requested diary records",
+                    "type": "integeger",
+                },
+            },
+            "required": ["limit"],
+            "type": "object",
+        },
+        takes_ctx=False,
+    )
+
+    agent = Agent(model, deps_type=dict, system_prompt=SYSTEM_PROMPT, tools=[tool])
     message = "<empty>"
 
     try:
