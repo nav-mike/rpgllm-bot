@@ -348,16 +348,13 @@ async def add_diary(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=chat_id, text=error_message(e))
 
 
-def character_background(id: int) -> str:
+def get_character(id: int) -> dict[str, Any]:
     """
-    Get character's background from database.
+    Get character from db by id.
     """
-    response = (
-        supabase_client.table("characters").select("background").eq("id", id).execute()
-    )
-    data = cast(dict[str, Any], response.data[0])
+    response = supabase_client.table("characters").select("*").eq("id", id).execute()
 
-    return data["background"] or "Unknown hero"
+    return cast(dict[str, Any], response.data[0])
 
 
 async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -372,10 +369,11 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         user = current_user(update)
+        character = get_character(user["current_character"])
 
         @agent.tool_plain()
         def get_character_background() -> str:
-            return character_background(user["current_character"])
+            return character["background"]
 
         if not user["current_character"]:
             raise ValueError("Please select a character first by /use Name")
@@ -392,7 +390,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response = await agent.run(
             value,
             message_history=history,
-            deps={"background": character_background(user["current_character"])},
+            deps={"name": character["name"], "background": character["background"]},
         )
 
         agent_message: dict[str, Any] = {
