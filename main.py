@@ -404,6 +404,10 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         def get_character_race() -> str:
             return character["race"]
 
+        @agent.tool_plain()
+        def get_character_class() -> str:
+            return character["class"]
+
         if not user["current_character"]:
             raise ValueError("Please select a character first by /use Name")
 
