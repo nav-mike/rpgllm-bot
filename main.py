@@ -415,6 +415,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "name": character["name"],
                 "background": character["background"],
                 "race": character["race"],
+                "class": character["class"],
             },
         )
 
