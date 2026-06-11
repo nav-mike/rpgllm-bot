@@ -304,10 +304,10 @@ async def current_character(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=chat_id, text=message)
 
 
-async def update_description(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def update_background(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
-    Update the character description.
-    Usage: /update_description Text
+    Update the character background.
+    Usage: /update_background Text
     """
 
     chat_id = get_chat_id(update)
@@ -317,7 +317,7 @@ async def update_description(update: Update, context: ContextTypes.DEFAULT_TYPE)
     try:
         if not value:
             raise ValueError(
-                "Description cannot be empty. Please use /update_description Text"
+                "Background cannot be empty. Please use /update_background Text"
             )
 
         supabase_client.table("characters").update({"background": value}).eq(
@@ -490,9 +490,7 @@ if __name__ == "__main__":
     list_characters_handler = CommandHandler("list_characters", list_characters)
     use_character_hanlder = CommandHandler("use", use_character)
     current_character_handler = CommandHandler("current", current_character)
-    update_description_handler = CommandHandler(
-        "update_description", update_description
-    )
+    update_background_handler = CommandHandler("update_background", update_background)
     update_race_handler = CommandHandler("update_race", update_race)
     add_diary_handler = CommandHandler("add_diary", add_diary)
 
@@ -503,7 +501,7 @@ if __name__ == "__main__":
     application.add_handler(list_characters_handler)
     application.add_handler(use_character_hanlder)
     application.add_handler(current_character_handler)
-    application.add_handler(update_description_handler)
+    application.add_handler(update_background_handler)
     application.add_handler(update_race_handler)
     application.add_handler(add_diary_handler)
     application.add_handler(chat_hanlder)
