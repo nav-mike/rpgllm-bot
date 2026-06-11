@@ -396,6 +396,10 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         def get_character_background() -> str:
             return character["background"]
 
+        @agent.tool_plain()
+        def get_character_name() -> str:
+            return character["name"]
+
         if not user["current_character"]:
             raise ValueError("Please select a character first by /use Name")
 
