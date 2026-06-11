@@ -411,7 +411,11 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response = await agent.run(
             value,
             message_history=history,
-            deps={"name": character["name"], "background": character["background"]},
+            deps={
+                "name": character["name"],
+                "background": character["background"],
+                "race": character["race"],
+            },
         )
 
         agent_message: dict[str, Any] = {
