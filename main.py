@@ -327,16 +327,20 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     Simple chat interface.
     """
 
-    chat_id = get_chat_id(update)
-    user = current_user(update)
-    value = getattr(update.message, "text", "").strip()
-
-    messages = fetch_messages(user["current_character"])
-
-    history: list[ModelMessage] = to_history(messages)
-
     message = "<empty>"
     try:
+        chat_id = get_chat_id(update)
+        user = current_user(update)
+
+        if not user["current_character"]:
+            raise ValueError("Please select a character first by /use Name")
+
+        value = getattr(update.message, "text", "").strip()
+
+        messages = fetch_messages(user["current_character"])
+
+        history: list[ModelMessage] = to_history(messages)
+
         if not value:
             raise ValueError("A message cannot be empty.")
 
