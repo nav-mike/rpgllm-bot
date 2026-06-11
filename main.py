@@ -348,16 +348,34 @@ async def add_diary(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=chat_id, text=error_message(e))
 
 
+def character_background(id: int) -> str:
+    """
+    Get character's background from database.
+    """
+    response = (
+        supabase_client.table("characters").select("background").eq("id", id).execute()
+    )
+    data = cast(dict[str, Any], response.data[0])
+
+    return data["background"] or "Unknown hero"
+
+
 async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Simple chat interface.
     """
 
-    agent = Agent(model, system_prompt=SYSTEM_PROMPT)
+    chat_id = get_chat_id(update)
+
+    agent = Agent(model, deps_type=dict, system_prompt=SYSTEM_PROMPT)
     message = "<empty>"
+
     try:
-        chat_id = get_chat_id(update)
         user = current_user(update)
+
+        @agent.tool_plain()
+        def get_character_background() -> str:
+            return character_background(user["current_character"])
 
         if not user["current_character"]:
             raise ValueError("Please select a character first by /use Name")
@@ -371,7 +389,11 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not value:
             raise ValueError("A message cannot be empty.")
 
-        response = await agent.run(value, message_history=history)
+        response = await agent.run(
+            value,
+            message_history=history,
+            deps={"background": character_background(user["current_character"])},
+        )
 
         agent_message: dict[str, Any] = {
             "content": response.output,
