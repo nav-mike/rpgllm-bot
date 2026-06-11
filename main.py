@@ -327,6 +327,27 @@ async def update_description(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await context.bot.send_message(chat_id=chat_id, text=error_message(e))
 
 
+async def update_race(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Update the character race.
+    Usage: /update_race Text
+    """
+
+    chat_id = get_chat_id(update)
+    user = current_user(update)
+    value = getattr(update.message, "text", "").partition(" ")[2].strip()
+
+    try:
+        if not value:
+            raise ValueError("Race cannot be empty. Please use /update_race Text")
+
+        supabase_client.table("characters").update({"race": value}).eq(
+            "id", user["current_character"]
+        ).execute()
+    except Exception as e:
+        await context.bot.send_message(chat_id=chat_id, text=error_message(e))
+
+
 async def add_diary(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Save a record to character's diary.
@@ -423,6 +444,7 @@ if __name__ == "__main__":
     update_description_handler = CommandHandler(
         "update_description", update_description
     )
+    update_race_handler = CommandHandler("update_race", update_race)
     add_diary_handler = CommandHandler("add_diary", add_diary)
 
     chat_hanlder = MessageHandler(filters.TEXT, chat)
@@ -433,6 +455,7 @@ if __name__ == "__main__":
     application.add_handler(use_character_hanlder)
     application.add_handler(current_character_handler)
     application.add_handler(update_description_handler)
+    application.add_handler(update_race_handler)
     application.add_handler(add_diary_handler)
     application.add_handler(chat_hanlder)
 
