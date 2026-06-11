@@ -29,8 +29,6 @@ model = OpenRouterModel(
     provider=OpenRouterProvider(api_key=os.environ["RPG_LLM_OPENROUTER_API_KEY"]),
 )
 
-agent = Agent(model)
-
 
 def get_chat_id(update: Update) -> int:
     """
@@ -327,6 +325,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     Simple chat interface.
     """
 
+    agent = Agent(model)
     message = "<empty>"
     try:
         chat_id = get_chat_id(update)
