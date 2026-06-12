@@ -438,12 +438,46 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         takes_ctx=False,
     )
 
-    agent = Agent(model, deps_type=dict, system_prompt=SYSTEM_PROMPT, tools=[tool])
     message = "<empty>"
 
     try:
         user = current_user(update)
         character = get_character(user["current_character"])
+
+        def add_diary_record(**kwargs):
+            message = kwargs["message"]
+
+            supabase_client.table("diary").insert(
+                {
+                    "character": user["current_character"],
+                    "message": message,
+                }
+            ).execute()
+
+        add_diary_record_tool = Tool.from_schema(
+            function=add_diary_record,
+            name="add_diary_record",
+            description="Add record to character's diary.",
+            json_schema={
+                "additionalProperties": False,
+                "properties": {
+                    "message": {
+                        "description": "Message to write to character's diary",
+                        "type": "string",
+                    },
+                },
+                "required": ["message"],
+                "type": "object",
+            },
+            takes_ctx=False,
+        )
+
+        agent = Agent(
+            model,
+            deps_type=dict,
+            system_prompt=SYSTEM_PROMPT,
+            tools=[tool, add_diary_record_tool],
+        )
 
         @agent.tool_plain()
         def get_character_background() -> str:
