@@ -476,7 +476,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
             file = await context.bot.get_file(photo)
             photo_bytes = await file.download_as_bytearray()
 
-            caption = (getattr(update.message, "caption", "") or "").strip()
+            caption = getattr(update.message, "caption", "").strip()
 
         def add_diary_record(**kwargs):
             message = kwargs["message"]
@@ -532,18 +532,16 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not user["current_character"]:
             raise ValueError("Please select a character first by /use Name")
 
-        value = (
-            caption if caption else (getattr(update.message, "text", "") or "").strip()
-        )
+        value = caption if caption else getattr(update.message, "text", "").strip()
 
         messages = fetch_messages(user["current_character"])
 
         history: list[ModelMessage] = to_history(messages)
 
-        data = []
+        if not value:
+            raise ValueError("A message cannot be empty.")
 
-        if value:
-            data.append(value)
+        data = [value]
 
         if photo_bytes:
             data.append(BinaryContent(data=bytes(photo_bytes), media_type="image/jpeg"))
