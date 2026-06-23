@@ -25,7 +25,7 @@ supabase_client: Client = create_client(
 )
 
 model = OpenRouterModel(
-    "openrouter/owl-alpha",
+    "google/gemma-4-31b-it:free",
     provider=OpenRouterProvider(api_key=os.environ["RPG_LLM_OPENROUTER_API_KEY"]),
 )
 
