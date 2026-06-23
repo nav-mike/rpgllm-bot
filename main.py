@@ -1,14 +1,8 @@
 import os
 import logging
 from typing import Any, List, cast
-from pydantic_ai.messages import (
-    BinaryContent,
-    ModelRequest,
-    ModelResponse,
-    TextPart,
-    UserPromptPart,
-)
-from telegram import Message, Update
+from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, UserPromptPart
+from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
     ContextTypes,
@@ -89,24 +83,6 @@ def get_user_id(update: Update) -> int:
         raise RuntimeError("user_id cannot be None")
 
     return user_id
-
-
-def get_photo(update: Update):
-    """
-    Extract photo data from update object.
-    """
-
-    message: Message | None = getattr(update, "message", None)
-
-    if message is None:
-        return None
-
-    photo = message.photo
-
-    if len(photo) < 1:
-        return None
-
-    return photo[-1]
 
 
 def error_message(e: Exception) -> str:
@@ -469,15 +445,6 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = current_user(update)
         character = get_character(user["current_character"])
 
-        photo = get_photo(update)
-        photo_bytes: bytearray | None = None
-        caption: str | None = None
-        if photo:
-            file = await context.bot.get_file(photo)
-            photo_bytes = await file.download_as_bytearray()
-
-            caption = getattr(update.message, "caption", "").strip()
-
         def add_diary_record(**kwargs):
             message = kwargs["message"]
 
@@ -532,7 +499,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not user["current_character"]:
             raise ValueError("Please select a character first by /use Name")
 
-        value = caption if caption else getattr(update.message, "text", "").strip()
+        value = getattr(update.message, "text", "").strip()
 
         messages = fetch_messages(user["current_character"])
 
@@ -541,13 +508,8 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not value:
             raise ValueError("A message cannot be empty.")
 
-        data = [value]
-
-        if photo_bytes:
-            data.append(BinaryContent(data=bytes(photo_bytes), media_type="image/jpeg"))
-
         response = await agent.run(
-            data,
+            value,
             message_history=history,
             deps={
                 "name": character["name"],
@@ -589,7 +551,7 @@ if __name__ == "__main__":
     update_class_handler = CommandHandler("update_class", update_class)
     add_diary_handler = CommandHandler("add_diary", add_diary)
 
-    chat_hanlder = MessageHandler(filters.TEXT | filters.PHOTO, chat)
+    chat_hanlder = MessageHandler(filters.TEXT, chat)
 
     application.add_handler(start_handler)
     application.add_handler(create_character_handler)
